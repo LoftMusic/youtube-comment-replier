@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>YouTube Comment Auto-Replier — Community Management at Scale</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    :root {
+      --bg: #0f0f12;
+      --surface: #18181c;
+      --surface2: #1e1e24;
+      --border: #2a2a35;
+      --text: #f0ece4;
+      --text-dim: #8a8690;
+      --accent: #ff3c3c;
+      --accent-dim: #b03030;
+      --green: #3ce070;
+      --blue: #3c8ce0;
+      --gold: #e0b03c;
+    }
+    
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+    
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+    
+    /* NAV */
+    nav {
+      padding: 20px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    
+    nav .container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: var(--text);
+    }
+    
+    .logo-icon {
+      width: 36px;
+      height: 36px;
+      background: var(--accent);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
+    
+    .logo-text {
+      font-weight: 700;
+      font-size: 16px;
+    }
+    
+    .nav-links {
+      display: flex;
+      gap: 24px;
+    }
+    
+    .nav-links a {
+      color: var(--text-dim);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+    
+    .nav-links a:hover { color: var(--text); }
+    
+    /* HERO */
+    .hero {
+      padding: 80px 0 60px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: -200px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(circle, rgba(255,60,60,0.08) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    
+    .badge {
+      display: inline-block;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+      color: var(--text-dim);
+      margin-bottom: 24px;
+    }
+    
+    .badge span { color: var(--green); }
+    
+    h1 {
+      font-size: clamp(32px, 5vw, 52px);
+      font-weight: 700;
+      line-height: 1.1;
+      margin-bottom: 20px;
+      letter-spacing: -0.02em;
+    }
+    
+    h1 .accent { color: var(--accent); }
+    
+    .hero-sub {
+      font-size: 18px;
+      color: var(--text-dim);
+      max-width: 600px;
+      margin: 0 auto 36px;
+      line-height: 1.7;
+    }
+    
+    .hero-stats {
+      display: flex;
+      gap: 32px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    
+    .stat {
+      text-align: center;
+    }
+    
+    .stat-num {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--accent);
+    }
+    
+    .stat-label {
+      font-size: 13px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    /* SECTION */
+    section {
+      padding: 60px 0;
+      border-top: 1px solid var(--border);
+    }
+    
+    h2 {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      letter-spacing: -0.01em;
+    }
+    
+    h3 {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    
+    .section-sub {
+      color: var(--text-dim);
+      font-size: 16px;
+      margin-bottom: 36px;
+    }
+    
+    /* FEATURES */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 20px;
+    }
+    
+    .feature-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      transition: border-color 0.2s;
+    }
+    
+    .feature-card:hover { border-color: var(--accent-dim); }
+    
+    .feature-icon {
+      font-size: 28px;
+      margin-bottom: 12px;
+    }
+    
+    .feature-card p {
+      color: var(--text-dim);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+    
+    /* HOW IT WORKS */
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 24px;
+    }
+    
+    .step {
+      position: relative;
+      padding-left: 48px;
+    }
+    
+    .step-num {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 32px;
+      height: 32px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--accent);
+    }
+    
+    .step h3 { margin-bottom: 6px; }
+    .step p { font-size: 14px; color: var(--text-dim); }
+    
+    /* COMPLIANCE */
+    .compliance {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 28px 32px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 24px;
+    }
+    
+    .compliance-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+    
+    .check {
+      color: var(--green);
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+    
+    .compliance-item h4 {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    
+    .compliance-item p {
+      font-size: 13px;
+      color: var(--text-dim);
+    }
+    
+    /* TECH */
+    .tech-row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    
+    .tech-tag {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    
+    /* CTA */
+    .cta-section {
+      text-align: center;
+      padding: 80px 0;
+    }
+    
+    .cta-section h2 {
+      margin-bottom: 16px;
+    }
+    
+    .cta-section p {
+      color: var(--text-dim);
+      margin-bottom: 32px;
+    }
+    
+    .btn {
+      display: inline-block;
+      padding: 14px 32px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 15px;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+    
+    .btn-primary {
+      background: var(--accent);
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      background: #ff5050;
+      transform: translateY(-1px);
+    }
+    
+    .btn-outline {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text);
+      margin-left: 12px;
+    }
+    
+    .btn-outline:hover { border-color: var(--text-dim); }
+    
+    /* FOOTER */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 32px 0;
+      text-align: center;
+      color: var(--text-dim);
+      font-size: 13px;
+    }
+    
+    footer a {
+      color: var(--text);
+      text-decoration: none;
+    }
+    
+    @media (max-width: 600px) {
+      .hero-stats { flex-direction: column; gap: 20px; }
+      .nav-links { display: none; }
+      .compliance { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="container">
+    <a href="#" class="logo">
+      <div class="logo-icon">💬</div>
+      <span class="logo-text">Comment Replier</span>
+    </a>
+    <div class="nav-links">
+      <a href="#features">Features</a>
+      <a href="#how-it-works">How It Works</a>
+      <a href="#compliance">Compliance</a>
+    </div>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="container">
+    <div class="badge">Open Source <span>●</span> MIT License</div>
+    <h1>YouTube Community<br>Management <span class="accent">at Scale</span></h1>
+    <p class="hero-sub">
+      Automate positive comment engagement across multiple YouTube channels. 
+      Sentiment-aware, spam-resistant, and fully compliant with YouTube's API guidelines.
+    </p>
+    <div class="hero-stats">
+      <div class="stat">
+        <div class="stat-num">30+</div>
+        <div class="stat-label">Channels Supported</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num">Local</div>
+        <div class="stat-label">AI Processing</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num">100%</div>
+        <div class="stat-label">OAuth-Controlled</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="features">
+  <div class="container">
+    <h2>Built for Creators</h2>
+    <p class="section-sub">Focus on making content. Let the tool handle community engagement.</p>
+    
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">🧠</div>
+        <h3>Sentiment Detection</h3>
+        <p>Uses local AI (Ollama) to analyze comment sentiment. Only replies to positive comments — filters out negativity automatically.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔐</div>
+        <h3>Multi-Channel OAuth</h3>
+        <p>Each channel authorizes once with its own OAuth token. Full control stays with the channel owner. No shared credentials.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🛡️</div>
+        <h3>Spam Prevention</h3>
+        <p>Built-in rate limiting, configurable delays, daily caps, and duplicate detection. Designed to respect YouTube's Terms of Service.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">↩️</div>
+        <h3>Undo / Revert</h3>
+        <p>Made a mistake? Revert the last batch of replies instantly. Every action is tracked and reversible.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📝</div>
+        <h3>Custom Templates</h3>
+        <p>Define your own reply format. Combine static text with dynamic links. Personalize engagement for each video or campaign.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📊</div>
+        <h3>Full Transparency</h3>
+        <p>Open-source code on GitHub. Audit every line. See exactly what the tool does and how it handles your data.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="how-it-works">
+  <div class="container">
+    <h2>How It Works</h2>
+    <p class="section-sub">Simple setup, powerful automation.</p>
+    
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <h3>Authorize Channel</h3>
+        <p>Run the OAuth flow once per channel. Tokens are stored locally — you control access.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <h3>Add Videos</h3>
+        <p>List the videos you want to monitor in a simple text file. One per line.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <h3>Configure Reply</h3>
+        <p>Set your reply template — greeting text and link to promote.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <h3>Run</h3>
+        <p>The tool fetches comments, detects sentiment, and replies to positive ones automatically.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="compliance">
+  <div class="container">
+    <h2>Compliance & Best Practices</h2>
+    <p class="section-sub">Built to work within YouTube's guidelines.</p>
+    
+    <div class="compliance">
+      <div class="compliance-item">
+        <div class="check">✓</div>
+        <div>
+          <h4>Rate Limiting</h4>
+          <p>Configurable delays between replies to avoid triggering spam filters.</p>
+        </div>
+      </div>
+      <div class="compliance-item">
+        <div class="check">✓</div>
+        <div>
+          <h4>Daily Caps</h4>
+          <p>Built-in limits on replies per day to stay within API quotas.</p>
+        </div>
+      </div>
+      <div class="compliance-item">
+        <div class="check">✓</div>
+        <div>
+          <h4>Per-Channel Auth</h4>
+          <p>Each channel uses its own OAuth token. No cross-channel credential sharing.</p>
+        </div>
+      </div>
+      <div class="compliance-item">
+        <div class="check">✓</div>
+        <div>
+          <h4>Sentiment Filtering</h4>
+          <p>Only engages with positive comments. Avoids controversial interactions.</p>
+        </div>
+      </div>
+      <div class="compliance-item">
+        <div class="check">✓</div>
+        <div>
+          <h4>Open Source</h4>
+          <p>Full code transparency. Audit, modify, or self-host as needed.</p>
+        </div>
+      </div>
+      <div class="compliance-item">
+        <div class="check">✓</div>
+        <div>
+          <h4>Local AI</h4>
+          <p>Sentiment analysis runs locally via Ollama. No external API calls for content.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="tech">
+  <div class="container">
+    <h2>Tech Stack</h2>
+    <p class="section-sub">Lightweight, self-hosted, no external dependencies.</p>
+    
+    <div class="tech-row">
+      <div class="tech-tag">Node.js</div>
+      <div class="tech-tag">YouTube Data API v3</div>
+      <div class="tech-tag">OAuth 2.0</div>
+      <div class="tech-tag">Ollama</div>
+      <div class="tech-tag">Express.js</div>
+    </div>
+  </div>
+</section>
+
+<section class="cta-section">
+  <div class="container">
+    <h2>Get Started</h2>
+    <p>Clone the repo, configure your channels, and start automating.</p>
+    <a href="https://github.com/LoftMusic/youtube-comment-replier" class="btn btn-primary">View on GitHub</a>
+    <a href="#how-it-works" class="btn btn-outline">Read the Docs</a>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <p>YouTube Comment Auto-Replier — Open Source Community Management</p>
+    <p style="margin-top: 8px;">
+      <a href="#">Documentation</a> · 
+      <a href="#">License</a> · 
+      <a href="#">Contact</a>
+    </p>
+  </div>
+</footer>
+
+</body>
+</html>
