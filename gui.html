@@ -1,0 +1,1030 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>YouTube Auto-Replier</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <style>
+    /* ─────────────────────────────────────────────
+       THEME - Modern Dark Mode with oklch()
+       ───────────────────────────────────────────── */
+    :root {
+      /* Core colors - oklch for modern perception */
+      --bg: oklch(0.145 0 0);
+      --bg-soft: oklch(0.178 0 0);
+      --bg-elevated: oklch(0.21 0 0);
+      --fg: oklch(0.92 0 0);
+      --fg-muted: oklch(0.65 0 0);
+      
+      /* Accent - warm amber (not generic blue!) */
+      --accent: oklch(0.65 0.18 30);
+      --accent-hover: oklch(0.7 0.18 30);
+      --accent-glow: oklch(0.65 0.18 30 / 0.3);
+      
+      /* Semantic */
+      --success: oklch(0.72 0.18 150);
+      --error: oklch(0.65 0.18 30);
+      --border: oklch(0.3 0 0);
+      
+      /* Typography */
+      --font: 'DM Sans', system-ui, sans-serif;
+      
+      /* Spacing & Radius */
+      --space-1: 0.25rem;
+      --space-2: 0.5rem;
+      --space-3: 0.75rem;
+      --space-4: 1rem;
+      --space-5: 1.5rem;
+      --space-6: 2rem;
+      --radius-sm: 0.5rem;
+      --radius-md: 0.75rem;
+      --radius-lg: 1rem;
+    }
+
+    /* ─────────────────────────────────────────────
+       RESET & BASE
+       ───────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; -webkit-font-smoothing: antialiased; }
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--fg);
+      line-height: 1.6;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ─────────────────────────────────────────────
+       BACKGROUND - Grid + Grunge
+       ───────────────────────────────────────────── */
+    .bg-canvas {
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      overflow: hidden;
+      background: var(--bg);
+    }
+    .bg-grid {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      background-image: 
+        linear-gradient(to right, oklch(0.65 0.18 30 / 0.06) 1px, transparent 1px),
+        linear-gradient(to bottom, oklch(0.65 0.18 30 / 0.06) 1px, transparent 1px);
+      background-size: 50px 50px;
+      animation: gridPulse 8s ease-in-out infinite;
+    }
+    @keyframes gridPulse {
+      0%, 100% { opacity: 0.4; }
+      50% { opacity: 1; }
+    }
+    .bg-grunge {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      opacity: 0.04;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+      mix-blend-mode: overlay;
+    }
+
+    /* ─────────────────────────────────────────────
+       LAYOUT
+       ───────────────────────────────────────────── */
+    .container {
+      max-width: 880px;
+      margin: 0 auto;
+      padding: var(--space-5) var(--space-4) var(--space-6);
+    }
+
+    /* ─────────────────────────────────────────────
+       HEADER
+       ───────────────────────────────────────────── */
+    .header {
+      text-align: center;
+      margin-bottom: var(--space-5);
+      padding-top: var(--space-3);
+    }
+    .logo-wrap {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-3);
+      margin-bottom: var(--space-2);
+    }
+    .logo {
+      width: 44px;
+      height: 44px;
+      background: var(--accent);
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 20px var(--accent-glow);
+    }
+    .logo svg { width: 24px; height: 24px; color: white; }
+    h1 {
+      font-size: 1.75rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+    .subtitle {
+      color: var(--fg-muted);
+      font-size: 0.95rem;
+    }
+
+    /* ─────────────────────────────────────────────
+       NAVIGATION - Pill style with slide indicator
+       ───────────────────────────────────────────── */
+    .nav {
+      display: flex;
+      justify-content: center;
+      gap: var(--space-1);
+      margin-bottom: var(--space-5);
+      background: var(--bg-soft);
+      padding: var(--space-1);
+      border-radius: var(--radius-lg);
+      width: fit-content;
+      margin-left: auto;
+      margin-right: auto;
+      border: 1px solid var(--border);
+    }
+    .nav-btn {
+      padding: var(--space-2) var(--space-5);
+      border: none;
+      background: transparent;
+      border-radius: var(--radius-md);
+      color: var(--fg-muted);
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 200ms ease-out;
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+    }
+    .nav-btn:hover { color: var(--fg); }
+    .nav-btn.active {
+      background: var(--bg-elevated);
+      color: var(--fg);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    .nav-btn svg { width: 16px; height: 16px; }
+
+    /* ─────────────────────────────────────────────
+       SECTIONS
+       ───────────────────────────────────────────── */
+    .section { display: none; animation: fadeIn 400ms ease-out; }
+    .section.active { display: block; }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ─────────────────────────────────────────────
+       STATS
+       ───────────────────────────────────────────── */
+    .stats {
+      display: flex;
+      gap: var(--space-3);
+      margin-bottom: var(--space-5);
+      padding: var(--space-1) 0;
+    }
+    
+    .stat-card {
+      background: var(--bg-soft);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-4) var(--space-5);
+      text-align: center;
+      min-width: 140px;
+      flex: 1;
+      transition: transform 200ms ease-out, box-shadow 200ms ease-out;
+    }
+    .stat-card:hover {
+      box-shadow: 0 0 24px var(--accent-glow), 0 4px 12px rgba(0,0,0,0.2);
+    }
+    .stat-value {
+      font-size: 2rem;
+      font-weight: 700;
+      line-height: 1.2;
+      letter-spacing: -0.02em;
+    }
+    .stat-label {
+      font-size: 0.75rem;
+      color: var(--fg-muted);
+      margin-top: var(--space-1);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    /* ─────────────────────────────────────────────
+       CARDS - Glassmorphism touches
+       ───────────────────────────────────────────── */
+    .card {
+      background: var(--bg-soft);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-5);
+      margin-bottom: var(--space-4);
+      backdrop-filter: blur(10px);
+    }
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: var(--space-4);
+      flex-wrap: wrap;
+      gap: var(--space-3);
+    }
+    .card-title {
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--fg-muted);
+    }
+
+    /* ─────────────────────────────────────────────
+       CHANNEL CHIPS
+       ───────────────────────────────────────────── */
+    .channels {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-2);
+    }
+    .channel-chip {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: var(--space-3) var(--space-4);
+      cursor: pointer;
+      transition: all 200ms ease-out;
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+    }
+    .channel-chip:hover {
+      border-color: var(--accent);
+      box-shadow: 0 0 16px var(--accent-glow);
+    }
+    .channel-chip.active {
+      border-color: var(--accent);
+      background: oklch(0.25 0.1 30);
+      box-shadow: 0 0 0 2px var(--accent-glow);
+    }
+    .channel-icon {
+      width: 32px;
+      height: 32px;
+      background: var(--bg);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--accent);
+    }
+    .channel-name { font-size: 0.9rem; font-weight: 500; }
+    .channel-count { font-size: 0.7rem; color: var(--fg-muted); }
+    .channel-count span { color: var(--success); font-weight: 600; }
+
+    /* ─────────────────────────────────────────────
+       VIDEO PANEL
+       ───────────────────────────────────────────── */
+    .video-panel {
+      display: none;
+      margin-top: var(--space-4);
+      padding-top: var(--space-4);
+      border-top: 1px solid var(--border);
+      animation: slideUp 300ms ease-out;
+    }
+    .video-panel.show { display: block; }
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .video-title {
+      font-size: 0.9rem;
+      font-weight: 500;
+      margin-bottom: var(--space-3);
+      color: var(--fg-muted);
+    }
+    .video-list {
+      max-height: 200px;
+      overflow-y: auto;
+      margin-bottom: var(--space-3);
+    }
+    .video-item {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-2) var(--space-3);
+      background: var(--bg);
+      border-radius: var(--radius-sm);
+      margin-bottom: var(--space-2);
+      transition: background 150ms;
+    }
+    .video-item:hover { background: var(--bg-elevated); }
+    .video-url {
+      flex: 1;
+      font-size: 0.8rem;
+      color: var(--fg-muted);
+      text-decoration: none;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .video-url:hover { color: var(--accent); }
+    .video-remove {
+      background: none;
+      border: none;
+      color: var(--fg-muted);
+      cursor: pointer;
+      padding: var(--space-1);
+      transition: color 150ms;
+    }
+    .video-remove:hover { color: var(--error); }
+
+    /* ─────────────────────────────────────────────
+       FORM ELEMENTS
+       ───────────────────────────────────────────── */
+    input, textarea {
+      width: 100%;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: var(--space-3) var(--space-4);
+      color: var(--fg);
+      font-size: 0.875rem;
+      font-family: inherit;
+      transition: border-color 200ms, box-shadow 200ms;
+    }
+    textarea { min-height: 100px; resize: vertical; }
+    input:focus, textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+    label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: var(--fg-muted);
+      margin-bottom: var(--space-2);
+    }
+
+    /* ─────────────────────────────────────────────
+       BUTTONS
+       ───────────────────────────────────────────── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding: var(--space-2) var(--space-4);
+      border-radius: var(--radius-md);
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 150ms ease-out;
+      border: none;
+      text-decoration: none;
+    }
+    .btn svg { width: 16px; height: 16px; }
+    
+    .btn-primary {
+      background: var(--accent);
+      color: white;
+      box-shadow: 0 2px 12px var(--accent-glow);
+    }
+    .btn-primary:hover {
+      background: var(--accent-hover);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 16px var(--accent-glow);
+    }
+    .btn-primary:active { transform: scale(0.98); }
+    
+    .btn-secondary {
+      background: var(--bg-elevated);
+      color: var(--fg);
+      border: 1px solid var(--border);
+    }
+    .btn-secondary:hover {
+      background: var(--bg);
+      border-color: var(--fg-muted);
+    }
+    .btn-sm { padding: var(--space-2) var(--space-3); font-size: 0.8rem; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    /* ─────────────────────────────────────────────
+       STATUS MESSAGES
+       ───────────────────────────────────────────── */
+    .status {
+      padding: var(--space-3) var(--space-4);
+      border-radius: var(--radius-sm);
+      font-size: 0.8rem;
+      margin-top: var(--space-3);
+      display: none;
+    }
+    .status.show { display: block; animation: fadeIn 200ms; }
+    .status.success { 
+      background: oklch(0.3 0.15 150 / 0.2); 
+      color: var(--success); 
+      border: 1px solid oklch(0.3 0.15 150 / 0.3); 
+    }
+    .status.error { 
+      background: oklch(0.3 0.15 30 / 0.2); 
+      color: oklch(0.7 0.15 30); 
+      border: 1px solid oklch(0.3 0.15 30 / 0.3); 
+    }
+
+    /* ─────────────────────────────────────────────
+       LOG
+       ───────────────────────────────────────────── */
+    .log {
+      background: var(--bg);
+      border-radius: var(--radius-md);
+      padding: var(--space-3);
+      max-height: 160px;
+      overflow-y: auto;
+      font-size: 0.75rem;
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    }
+    .log div { padding: var(--space-1) 0; border-bottom: 1px solid var(--border); }
+    .log div:last-child { border: none; }
+    .log .time { color: var(--fg-muted); margin-right: var(--space-2); }
+    .log .success { color: var(--success); }
+    .log .error { color: oklch(0.7 0.15 30); }
+    .log .info { color: var(--accent); }
+
+    /* ─────────────────────────────────────────────
+       HISTORY TABLE
+       ───────────────────────────────────────────── */
+    .history-table { width: 100%; border-collapse: collapse; }
+    .history-table th, .history-table td { 
+      padding: var(--space-3); 
+      text-align: left; 
+      border-bottom: 1px solid var(--border); 
+    }
+    .history-table th { 
+      font-size: 0.7rem; 
+      font-weight: 600; 
+      text-transform: uppercase; 
+      letter-spacing: 0.05em; 
+      color: var(--fg-muted); 
+    }
+    .history-table tr:hover { background: var(--bg-elevated); }
+    .history-table a { color: var(--fg); text-decoration: none; }
+    .history-table a:hover { color: var(--accent); }
+    .history-table .reverted { color: oklch(0.7 0.15 30); }
+    .history-table .active { color: var(--success); }
+
+    /* ─────────────────────────────────────────────
+       EMPTY STATE
+       ───────────────────────────────────────────── */
+    .empty {
+      text-align: center;
+      padding: var(--space-5);
+      color: var(--fg-muted);
+      font-size: 0.875rem;
+    }
+
+    /* ─────────────────────────────────────────────
+       RESPONSIVE
+       ───────────────────────────────────────────── */
+    @media (max-width: 640px) {
+      .container { padding: var(--space-4) var(--space-3) var(--space-5); }
+      .card { padding: var(--space-4); }
+    }
+  </style>
+</head>
+<body>
+  <!-- Background: grid + grunge -->
+  <div class="bg-canvas">
+    <div class="bg-grid"></div>
+    <div class="bg-grunge"></div>
+  </div>
+
+  <div class="container">
+    <!-- Header -->
+    <header class="header">
+      <div class="logo-wrap">
+        <div class="logo">
+          <i data-lucide="play"></i>
+        </div>
+        <h1>Auto-Replier</h1>
+      </div>
+      <p class="subtitle">YouTube comment replies powered by AI</p>
+    </header>
+
+    <!-- Navigation -->
+    <nav class="nav">
+      <button class="nav-btn active" onclick="switchTab('dashboard', this)">
+        <i data-lucide="layout-grid"></i>
+        Dashboard
+      </button>
+      <button class="nav-btn" onclick="switchTab('config', this)">
+        <i data-lucide="settings"></i>
+        Config
+      </button>
+      <button class="nav-btn" onclick="switchTab('history', this)">
+        <i data-lucide="history"></i>
+        History
+      </button>
+    </nav>
+
+    <!-- Dashboard -->
+    <section id="dashboard" class="section active">
+      <div class="stats">
+        <div class="stat-card">
+          <div class="stat-value" id="channelsCount">-</div>
+          <div class="stat-label">Channels</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="repliedToday">-</div>
+          <div class="stat-label">Today</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="pendingVideos">-</div>
+          <div class="stat-label">Queued</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Connected Channels</span>
+          <button class="btn btn-secondary btn-sm" onclick="addChannel()">
+            <i data-lucide="plus"></i>
+            Add
+          </button>
+        </div>
+        <div id="dashboardChannels" class="channels">
+          <div class="empty">Loading...</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><span class="card-title">Automation</span></div>
+        <div style="display:flex;gap:var(--space-3);flex-wrap:wrap;">
+          <button class="btn btn-primary" onclick="runAutomation()" id="runBtn">
+            <i data-lucide="zap"></i>
+            Run
+          </button>
+          <button class="btn btn-secondary" onclick="runRevert()">
+            <i data-lucide="rotate-ccw"></i>
+            Revert
+          </button>
+        </div>
+        <div class="status" id="runStatus"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><span class="card-title">Activity Log</span></div>
+        <div class="log" id="log">
+          <div><span class="time">--:--:--</span>Ready</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Config -->
+    <section id="config" class="section">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Channels & Videos</span>
+          <button class="btn btn-primary btn-sm" onclick="saveAllConfig()" id="saveBtn">
+            <i data-lucide="save"></i>
+            Save
+          </button>
+        </div>
+        <p style="color:var(--fg-muted);font-size:0.875rem;margin-bottom:var(--space-4);">Tap a channel to manage its videos</p>
+        
+        <div id="configChannels" class="channels">
+          <div class="empty">Loading...</div>
+        </div>
+        
+        <div id="videosPanel" class="video-panel">
+          <div class="video-title" id="selectedChannelName">Channel</div>
+          <div id="videosList" class="video-list"></div>
+          <div style="display:flex;gap:var(--space-2);">
+            <input type="text" id="newVideoUrl" placeholder="Paste YouTube URL...">
+            <button class="btn btn-primary btn-sm" onclick="addVideoToChannel()">
+              <i data-lucide="plus"></i>
+            </button>
+          </div>
+        </div>
+        <div class="status" id="configStatus"></div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-4);">
+        <div class="card">
+          <div class="card-title" style="margin-bottom:var(--space-3);">Reply Messages</div>
+          <label>One per line, randomly selected</label>
+          <textarea id="partAOptions" placeholder="Enter messages..."></textarea>
+        </div>
+        <div class="card">
+          <div class="card-title" style="margin-bottom:var(--space-3);">Link Attached</div>
+          <label>Video link in replies</label>
+          <input type="text" id="partB" placeholder="https://youtube.com/watch?v=...">
+        </div>
+      </div>
+    </section>
+
+    <!-- History -->
+    <section id="history" class="section">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Reply History</span>
+          <button class="btn btn-secondary btn-sm" onclick="clearHistory()">
+            <i data-lucide="trash-2"></i>
+            Clear
+          </button>
+        </div>
+        <div id="historyContent">
+          <div class="empty">Loading...</div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Initialize Lucide icons -->
+  <script>lucide.createIcons();</script>
+
+  <script>
+    var API_BASE = '';
+    var channelsData = [];
+    var selectedChannel = null;
+
+    function switchTab(tabId, btn) {
+      document.querySelectorAll('.section').forEach(function(el) { el.classList.remove('active'); });
+      document.querySelectorAll('.nav-btn').forEach(function(el) { el.classList.remove('active'); });
+      document.getElementById(tabId).classList.add('active');
+      if (btn) btn.classList.add('active');
+      if (tabId === 'history') loadHistory();
+      if (tabId === 'config') loadConfig();
+    }
+
+    function log(msg, type) {
+      type = type || '';
+      var logEl = document.getElementById('log');
+      var time = new Date().toLocaleTimeString();
+      var entry = document.createElement('div');
+      entry.innerHTML = '<span class="time">' + time + '</span><span class="' + type + '">' + msg + '</span>';
+      logEl.insertBefore(entry, logEl.firstChild);
+    }
+
+    function showStatus(id, msg, type) {
+      type = type || 'success';
+      var el = document.getElementById(id);
+      el.textContent = msg;
+      el.className = 'status ' + type + ' show';
+      setTimeout(function() { el.classList.remove('show'); }, 4000);
+    }
+
+    function loadStats() {
+      fetch(API_BASE + '/api/stats')
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+          document.getElementById('channelsCount').textContent = data.channels;
+          document.getElementById('repliedToday').textContent = data.today;
+          document.getElementById('pendingVideos').textContent = data.pending;
+          channelsData = data.channelNames || [];
+          renderDashboardChannels();
+        })
+        .catch(function(e) { log('Error: ' + e.message, 'error'); });
+    }
+
+    function renderDashboardChannels() {
+      var container = document.getElementById('dashboardChannels');
+      if (channelsData.length === 0) {
+        container.innerHTML = '<div class="empty">No channels connected yet</div>';
+        return;
+      }
+      var html = '';
+      channelsData.forEach(function(ch) {
+        var initial = ch.charAt(0).toUpperCase();
+        html += '<div class="channel-chip" onclick="selectChannelFromDashboard(\'' + ch + '\')">' +
+          '<div class="channel-icon">' + initial + '</div>' +
+          '<div><div class="channel-name">' + ch + '</div>' +
+          '<div class="channel-count"><span>0</span> videos</div></div></div>';
+      });
+      container.innerHTML = html;
+    }
+
+    function selectChannelFromDashboard(channel) {
+      switchTab('config', document.querySelectorAll('.nav-btn')[1]);
+      setTimeout(function() { selectChannel(channel); }, 150);
+    }
+
+    function loadConfig() {
+      fetch(API_BASE + '/api/config')
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+          document.getElementById('partAOptions').value = (data.partAOptions || []).join('\n');
+          document.getElementById('partB').value = data.partB || '';
+          
+          var videosByChannel = {};
+          if (data.videos) {
+            data.videos.split('\n').forEach(function(line) {
+              var parts = line.split('|');
+              if (parts.length >= 2) {
+                var ch = parts[0].trim();
+                var url = parts[1].trim();
+                if (!videosByChannel[ch]) videosByChannel[ch] = [];
+                videosByChannel[ch].push(url);
+              }
+            });
+          }
+          
+          var container = document.getElementById('configChannels');
+          if (channelsData.length === 0) {
+            container.innerHTML = '<div class="empty">No channels yet</div>';
+            return;
+          }
+          
+          var html = '';
+          channelsData.forEach(function(ch) {
+            var count = videosByChannel[ch] ? videosByChannel[ch].length : 0;
+            var active = selectedChannel === ch ? ' active' : '';
+            var initial = ch.charAt(0).toUpperCase();
+            html += '<div class="channel-chip' + active + '" onclick="selectChannel(\'' + ch + '\')">' +
+              '<div class="channel-icon">' + initial + '</div>' +
+              '<div><div class="channel-name">' + ch + '</div>' +
+              '<div class="channel-count"><span>' + count + '</span> videos</div></div></div>';
+          });
+          container.innerHTML = html;
+          
+          if (selectedChannel) renderVideosPanel(videosByChannel[selectedChannel] || []);
+        })
+        .catch(function(e) { log('Error: ' + e.message, 'error'); });
+    }
+
+    function selectChannel(channel) {
+      selectedChannel = channel;
+      document.getElementById('selectedChannelName').textContent = channel;
+      document.getElementById('videosPanel').classList.add('show');
+      
+      // Update active state
+      document.querySelectorAll('#configChannels .channel-chip').forEach(function(chip) {
+        chip.classList.remove('active');
+        if (chip.querySelector('.channel-name').textContent === channel) {
+          chip.classList.add('active');
+        }
+      });
+      
+      fetch(API_BASE + '/api/config')
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+          var videos = [];
+          if (data.videos) {
+            data.videos.split('\n').forEach(function(line) {
+              var parts = line.split('|');
+              if (parts.length >= 2 && parts[0].trim() === channel) {
+                videos.push(parts[1].trim());
+              }
+            });
+          }
+          renderVideosPanel(videos);
+        });
+    }
+
+    function renderVideosPanel(videos) {
+      var list = document.getElementById('videosList');
+      if (!videos || videos.length === 0) {
+        list.innerHTML = '<div class="empty">No videos for this channel</div>';
+        return;
+      }
+      var html = '';
+      videos.forEach(function(url) {
+        html += '<div class="video-item"><a href="' + url + '" target="_blank" class="video-url">' + url + '</a><button class="video-remove" onclick="removeVideo(\'' + url + '\')"><i data-lucide="x" style="width:14px;height:14px"></i></button></div>';
+      });
+      list.innerHTML = html;
+      lucide.createIcons();
+    }
+
+    function addVideoToChannel() {
+      var url = document.getElementById('newVideoUrl').value.trim();
+      if (!url || !selectedChannel) {
+        showStatus('configStatus', 'Please enter a video URL', 'error');
+        return;
+      }
+      
+      // Validate YouTube URL
+      var youtubeRegex = /^(https?:\/\/)?(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/v\/)[a-zA-Z0-9_-]{11}(&.*)?$/;
+      if (!youtubeRegex.test(url)) {
+        showStatus('configStatus', 'Invalid YouTube URL. Use: youtube.com/watch?v=... or youtu.be/...', 'error');
+        return;
+      }
+      
+      fetch(API_BASE + '/api/config')
+        .then(function(res) { return res.json(); })
+        .then(function(configData) {
+          var existingLines = configData.videos ? configData.videos.split('\n').filter(function(l) { return l.trim(); }) : [];
+          
+          var isDuplicate = existingLines.some(function(line) { return line.includes(url); });
+          if (isDuplicate) {
+            showStatus('configStatus', 'This video is already added', 'error');
+            return;
+          }
+          
+          existingLines.push(selectedChannel + ' | ' + url);
+          
+          return fetch(API_BASE + '/api/config', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ videos: existingLines.join('\n'), partB: configData.partB })
+          });
+        })
+        .then(function() {
+          document.getElementById('newVideoUrl').value = '';
+          selectChannel(selectedChannel);
+          loadStats();
+          showStatus('configStatus', 'Video added', 'success');
+        })
+        .catch(function(e) {
+          showStatus('configStatus', 'Error: ' + e.message, 'error');
+        });
+    }
+
+    function removeVideo(url) {
+      fetch(API_BASE + '/api/config')
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+          var lines = data.videos ? data.videos.split('\n').filter(function(l) { return !l.includes(url); }) : [];
+          return fetch(API_BASE + '/api/config', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ videos: lines.join('\n'), partB: data.partB })
+          });
+        })
+        .then(function() {
+          selectChannel(selectedChannel);
+          loadStats();
+          showStatus('configStatus', 'Video removed', 'success');
+        });
+    }
+
+    function saveAllConfig() {
+      var btn = document.getElementById('saveBtn');
+      btn.disabled = true;
+      btn.innerHTML = '<i data-lucide="loader-2" class="spin"></i> Saving';
+      lucide.createIcons();
+      
+      var partA = document.getElementById('partAOptions').value.split('\n').filter(function(l) { return l.trim(); });
+      var partB = document.getElementById('partB').value;
+      
+      fetch(API_BASE + '/api/part-a-options', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ options: partA })
+      })
+      .then(function() {
+        return fetch(API_BASE + '/api/config', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ partB: partB })
+        });
+      })
+      .then(function() {
+        showStatus('configStatus', 'Saved successfully', 'success');
+        loadStats();
+        btn.disabled = false;
+        btn.innerHTML = '<i data-lucide="save"></i> Save';
+        lucide.createIcons();
+      })
+      .catch(function(e) {
+        showStatus('configStatus', 'Error: ' + e.message, 'error');
+        btn.disabled = false;
+        btn.innerHTML = '<i data-lucide="save"></i> Save';
+        lucide.createIcons();
+      });
+    }
+
+    function runAutomation() {
+      saveAllConfig();
+      var btn = document.getElementById('runBtn');
+      btn.disabled = true;
+      btn.innerHTML = '<i data-lucide="loader-2" class="spin"></i> Running';
+      lucide.createIcons();
+      showStatus('runStatus', 'Processing...', 'loading');
+      log('Starting automation...', 'info');
+      
+      fetch(API_BASE + '/api/run', { method: 'POST' })
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+          if (data.success) {
+            showStatus('runStatus', 'Complete! ' + data.replies + ' replies sent', 'success');
+            log('Completed: ' + data.replies + ' replies', 'success');
+          } else {
+            showStatus('runStatus', 'Error: ' + data.error, 'error');
+            log('Error: ' + data.error, 'error');
+          }
+        })
+        .catch(function(e) {
+          showStatus('runStatus', 'Error: ' + e.message, 'error');
+          log('Error: ' + e.message, 'error');
+        })
+        .then(function() {
+          btn.disabled = false;
+          btn.innerHTML = '<i data-lucide="zap"></i> Run';
+          lucide.createIcons();
+          loadStats();
+        });
+    }
+
+    function runRevert() {
+      showStatus('runStatus', 'Reverting...', 'loading');
+      fetch(API_BASE + '/api/revert', { method: 'POST' })
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+          if (data.success) {
+            showStatus('runStatus', 'Reverted ' + data.deleted + ' replies', 'success');
+            log('Reverted: ' + data.deleted + ' replies', 'success');
+          } else {
+            showStatus('runStatus', 'Error: ' + data.error, 'error');
+          }
+        })
+        .then(function() { loadStats(); });
+    }
+
+    function loadHistory() {
+      var container = document.getElementById('historyContent');
+      fetch(API_BASE + '/api/history')
+        .then(function(res) { return res.json(); })
+        .then(function(history) {
+          if (!history || history.length === 0) {
+            container.innerHTML = '<div class="empty">No history yet</div>';
+            return;
+          }
+          var html = '<table class="history-table"><thead><tr><th>Date</th><th>Video</th><th>Replies</th><th>Status</th><th></th></tr></thead><tbody>';
+          history.forEach(function(item) {
+            var date = new Date(item.date).toLocaleDateString() + ' ' + new Date(item.date).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+            var status = item.reverted ? '<span class="reverted">Reverted</span>' : '<span class="active">Active</span>';
+            var videoId = item.videoUrl ? (item.videoUrl.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/) || [null,item.videoId])[1] : item.videoId;
+            html += '<tr><td>' + date + '</td><td><a href="' + item.videoUrl + '" target="_blank">' + (item.videoTitle || videoId) + '</a></td><td>' + item.replies + '</td><td>' + status + '</td><td>' + (!item.reverted && item.replies > 0 ? '<button class="btn btn-secondary btn-sm" onclick="revertHistory(\'' + item.videoId + '\')"><i data-lucide="rotate-ccw" style="width:12px;height:12px"></i></button>' : '-') + '</td></tr>';
+          });
+          html += '</tbody></table>';
+          container.innerHTML = html;
+          lucide.createIcons();
+        })
+        .catch(function(e) { container.innerHTML = '<div class="empty">Error: ' + e.message + '</div>'; });
+    }
+
+    function revertHistory(videoId) {
+      if (!confirm('Revert replies for this video?')) return;
+      fetch(API_BASE + '/api/history/revert', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ videoId: videoId })
+      })
+      .then(function(res) { return res.json(); })
+      .then(function(data) {
+        if (data.success) {
+          alert('Reverted ' + data.deleted + ' replies');
+          loadHistory();
+          loadStats();
+        } else {
+          alert('Error: ' + data.error);
+        }
+      });
+    }
+
+    function addChannel() {
+      fetch(API_BASE + '/api/oauth/url')
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+          if (data.url) {
+            var w = 600, h = 700;
+            window.open(data.url, 'oauth', 'width=' + w + ',height=' + h + ',left=' + ((screen.width-w)/2) + ',top=' + ((screen.height-h)/2));
+            var check = setInterval(function() { loadStats(); }, 3000);
+            setTimeout(function() { clearInterval(check); }, 120000);
+          }
+        });
+    }
+
+    function clearHistory() {
+      if (!confirm('Clear ALL history?')) return;
+      fetch(API_BASE + '/api/history/clear', { method: 'POST' })
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+          if (data.success) {
+            loadHistory();
+            loadStats();
+            alert('Done!');
+          } else {
+            alert('Error: ' + data.error);
+          }
+        });
+    }
+
+    // Add spinner animation
+    var style = document.createElement('style');
+    style.textContent = '@keyframes spin { to { transform: rotate(360deg); } } .spin { animation: spin 1s linear infinite; }';
+    document.head.appendChild(style);
+
+    loadStats();
+  </script>
+</body>
+</html>

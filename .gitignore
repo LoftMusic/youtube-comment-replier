@@ -1,0 +1,32 @@
+# Dependencies
+node_modules/
+
+# OAuth tokens - NEVER commit these
+tokens/
+*.json
+!package.json
+!package-lock.json
+
+# Credentials
+youtube-oauth.json
+.env
+
+# Temp files
+*.wav
+temp_*
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# History tracking
+history.json
+last-batch.json
+replied.json
